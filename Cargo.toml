@@ -5,3 +5,7 @@ edition = "2024"
 
 [dependencies]
 chrono = "0.4.40"
+cli-log = "2.1.0"
+regex = "1.11.1"
+signal-hook = "0.3.18"
+thread-priority = "2.1.0"
