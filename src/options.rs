@@ -1,22 +1,17 @@
+use anyhow::{bail, ensure, Error};
 use regex::Regex;
-use chrono::{NaiveDateTime, NaiveTime};
-use std::cmp;
+use chrono::{Duration, NaiveDateTime, NaiveTime};
+use std::{cmp, format};
 
-pub fn parse_options(args: Vec<String>) -> Option<Command> {
-    if args.len() < 2 {
-        println!("Too few arguments");
-        return None;
-    }
+pub fn parse_options(args: Vec<String>) -> Result<Command, Error> {
+    ensure!(args.len() >= 2, "Too few arguments");
 
     // from the command line arguments return the command 
     match args[1].as_str() {
-        "start"     =>  Some(Command::Start),
-        "stop"      =>  Some(Command::Stop),
+        "start"     =>  Ok(Command::Start),
+        "stop"      =>  Ok(Command::Stop),
         "notify"    =>  { 
-            if args.len() < 3 {
-                println!("Notify command needs a type!");
-                return None;
-            }
+            ensure!(args.len() >= 3, "Notify command needs a type!");
 
             let mut final_datetime: Option<NaiveDateTime> = None;
             let mut final_time: Option<NaiveTime> = None;
@@ -28,55 +23,39 @@ pub fn parse_options(args: Vec<String>) -> Option<Command> {
             match args[2].as_str() {
                 "once"      => {
                     while i < args.len() {
-                        if i + 1 == args.len() {
-                            println!("{} was not provided with a parameter!", args[i]);
-                            return None;
-                        }
+                        ensure!(args.len() != i + 1, "{} was not provided with a parameter!", args[i]);
                         match args[i].as_str() {
                             "-w"        => {
                                 let datetime = parse_datetime(&args, i + 1);
-                                if let Some(_) = datetime {
-                                    final_datetime = datetime;
-                                } else {
-                                    println!("{} is not a valid date!\nValid dates should be in the format of %Y-%m-%d %H:%M:%S.", args[i + 1]);
-                                    return None;
-                                }
+                                ensure!(datetime != None, "{} is not a valid date!\nValid dates should be in the format of %Y-%m-%d %H:%M:%S.", args[i + 1]);
+                                final_datetime = datetime;
                             }, 
                             "-p"        => picture = Some(args[i + 1].clone()),
                             "-s"        => sound = Some(args[i + 1].clone()),
                             "--desc"    => description = Some(args[i + 1].clone()),
                             _           => {
-                                println!("{}: no such option", args[i + 1]);
-                                return None;
+                                bail!("{}: no such option", args[i + 1]);
                             }
                         }
                         i += 2;                          
                     }
 
                     if let Some(act_datetime) = final_datetime {
-                        return Some(Command::Remind(Reminder::Once(act_datetime, Media { picture, sound }, description)));
+                        return Ok(Command::Remind(Reminder::Once(act_datetime, Media { picture, sound }, description)));
                     }
                     
-                    println!("No date and time provided to notification! notify once needs the -w field to be set");
-                    None
+                    bail!("No date and time provided to notification! notify once needs the -w field to be set");
                 },
          
                 "daily"     => {
                     let mut days: [bool; 7] = [true; 7];
                     while i < args.len() {
-                        if i + 1 == args.len() {
-                            println!("{} was not provided with a parameter!", args[i]);
-                            return None;
-                        }
+                        ensure!(i + 1 != args.len(), "{} was not provided with a parameter!", args[i]);
                         match args[i].as_str() {
                             "-w"        => {
                                 let time = parse_time(&args, i + 1);
-                                if let Some(_) = time {
-                                    final_time = time;
-                                } else {
-                                    println!("{} is not a valid date!\nValid dates should be in the format of %Y-%m-%d %H:%M:%S.", args[i + 1]);
-                                    return None;
-                                }
+                                ensure!(time != None, "{} is not a valid date! Valid dates should be in the format of %Y-%m-%d %H:%M:%S.", args[i + 1]);
+                                final_time = time;
                             }, 
                             "-d"        => {
                                 let basic_format = Regex::new(r"^[1-7]{1,7}$").unwrap();
@@ -96,111 +75,93 @@ pub fn parse_options(args: Vec<String>) -> Option<Command> {
                                     }
                                 } else { 
                                     days = [true;7];
-                                    println!("{} in not a valid time format. Valid time formats are <n>-<m> and <n1><n2>.. where <_> are numbers from 1-7", args[i + 1]);
+                                    warn!("{} in not a valid time format. Valid time formats are <n>-<m> and <n1><n2>.. where <_> are numbers from 1-7, notification set to all dates.", args[i + 1]);
                                 }
                             }
                             "-p"        => picture = Some(args[i + 1].clone()),
                             "-s"        => sound = Some(args[i + 1].clone()),
                             "--desc"    => description = Some(args[i + 1].clone()),
                             _           => {
-                                println!("{}: no such option", args[i + 1]);
-                                return None;
+                                bail!("{}: no such option", args[i + 1]);
                             }
                         }
                         i += 2;                          
                     }
 
                     if let Some(act_time) = final_time {
-                        return Some(Command::Remind(Reminder::Daily(act_time, days, Media { picture, sound }, description)));
+                        return Ok(Command::Remind(Reminder::Daily(act_time, days, Media { picture, sound }, description)));
                     }
-                    println!("No date and time provided to notification! notify daily needs the -w field to be set");
-                    None
+                    bail!("No date and time provided to notification! notify daily needs the -w field to be set");
                 },
 
                 "interval"  => {
                     // TODO: change this to a Duration
-                    let mut interval_time: u32 = 0;
+                    let mut interval_time: Duration = Duration::zero();
                     while i < args.len() {
-                        if i + 1 == args.len() {
-                            println!("{} was not provided with a parameter!", args[i]);
-                            return None;
-                        }
+                        ensure!(i + 1 != args.len(), "{} was not provided with a parameter!", args[i]);
                         match args[i].as_str() {
                             "-w"        => {
                                 let datetime = parse_datetime(&args, i + 1);
-                                if let Some(_) = datetime {
-                                    final_datetime = datetime;
-                                } else {
-                                    println!("{} is not a valid date!\nValid dates should be in the format of %Y-%m-%d %H:%M:%S.", args[i + 1]);
-                                    return None;
-                                }
+                                ensure!(datetime != None, "{} is not a valid date! Valid dates should be in the format of %Y-%m-%d %H:%M:%S.", args[i + 1]);
+                                final_datetime = datetime;
                             }, 
                             "-i"        => {
                                 let time_format = Regex::new(r"^([1-9][0-9]{0,8}[dhmsDHMS]){1,4}$").unwrap();
-                                    
-                                if time_format.is_match(args[i + 1].as_str()) {
-                                    let time_indicator = Regex::new(r"[dhmsDHMS]").unwrap();
-                                    let mut indicator_indexes = time_indicator.find_iter(args[i + 1].as_str());
-                                    let mut prev = indicator_indexes.next().unwrap().start();
-                                    let mut next: usize;
-                                    loop {
-                                        let next_res = indicator_indexes.next();
-                                        if next_res != None { 
-                                            next = next_res.unwrap().start();
-                                            let time_type = &args[i + 1][prev..prev+1];
-                                            let time = args[i + 1][prev..next].parse::<usize>().unwrap() as u32;
-                                            interval_time += time * match time_type {
-                                                "d" => 86400,
-                                                "h" => 3600,
-                                                "m" => 60,
-                                                "s" => 1,
-                                                _   => {
-                                                    println!("{} is not a valid time type! Valid time types are: d, h, m, s", time_type);
-                                                    return None;
-                                                }
-                                            };
-                                            prev = next;
-                                        } else {
-                                            break;
-                                        }
+                                
+                                ensure!(time_format.is_match(args[i + 1].as_str()), "{} is not a valid time identifier! Valid time identifiers should be in the format of %Y-%m-%d %H:%M:%S.", args[i + 1]);
+                                let time_indicator = Regex::new(r"[dhmsDHMS]").unwrap();
+                                let mut indicator_indexes = time_indicator.find_iter(args[i + 1].as_str());
+                                let mut prev = indicator_indexes.next().unwrap().start();
+                                let mut next: usize;
+                                loop {
+                                    let next_res = indicator_indexes.next();
+                                    if next_res != None { 
+                                        next = next_res.unwrap().start();
+                                        let time_type = &args[i + 1][prev..prev+1];
+                                        let time = args[i + 1][prev..next].parse::<usize>().unwrap() as i64;
+                                        interval_time += match time_type {
+                                            "d" => Duration::days(time),
+                                            "h" => Duration::hours(time),
+                                            "m" => Duration::minutes(time),
+                                            "s" => Duration::seconds(time),
+                                            _   => {
+                                                bail!("{} is not a valid time type! Valid time types are: d, h, m, s", time_type);
+                                            }
+                                        };
+                                        prev = next;
+                                    } else {
+                                        break;
                                     }
-                                } else {
-                                    println!("{} is not a valid time identifier! Valid time identifiers should be in the format of %Y-%m-%d %H:%M:%S.", args[i + 1]);
-                                    return None;
                                 }
                             },
                             "-p"        => picture = Some(args[i + 1].clone()),
                             "-s"        => sound = Some(args[i + 1].clone()),
                             "--desc"    => description = Some(args[i + 1].clone()),
                             _           => {
-                                println!("{}: no such option", args[i + 1]);
-                                return None;
+                                bail!("{}: no such option", args[i + 1]);
                             }
                         }
                         i += 2;                          
                     }
 
                     if let Some(act_datetime) = final_datetime {
-                        return Some(Command::Remind(Reminder::SpecificInterval(act_datetime, interval_time, Media { picture, sound }, description)));
+                        return Ok(Command::Remind(Reminder::SpecificInterval(act_datetime, interval_time, Media { picture, sound }, description)));
                     }
-                    println!("No date and time provided to notification! notify daily needs the -w field to be set");
-                    None
+                    bail!("No date and time provided to notification! notify daily needs the -w field to be set");
                 },
-                "custom"    => None,
+                "custom"    => Ok(Command::NoCommand),
                 _           => {
-                    println!("{}: no such type of notification!", args[2]);
-                    None
+                    bail!("{}: no such type of notification!", args[2]);
                 }
             }
         },
-        "help"      =>  Some(Command::Help),
-        "add"       =>  None,
-        "show"      =>  None,
-        "note"      =>  None,
-        "delete"    =>  None,
+        "help"      =>  Ok(Command::Help),
+        "add"       =>  Ok(Command::Help),
+        "show"      =>  Ok(Command::Help),
+        "note"      =>  Ok(Command::Help),
+        "delete"    =>  Ok(Command::Help),
         _           =>  {
-            println!("{} is not a valid argument! Valid arguments are start, stop, remind, note, help, show, add, delete.", args[1]);
-            return None;
+            bail!("{} is not a valid argument! Valid arguments are start, stop, remind, note, help, show, add, delete.", args[1]);
         }
     }  
 }
@@ -256,13 +217,14 @@ pub enum Command {
     AddMedia(String, String),
     Delete(String),
     Show(Data),
+    NoCommand
 }
 
 pub enum Reminder {
     Once(NaiveDateTime, Media, Option<String>),
     MoreThanOnce(Vec<NaiveDateTime>, Media, Option<String>),
     Daily(NaiveTime, [bool; 7], Media, Option<String>),
-    SpecificInterval(NaiveDateTime, u32, Media, Option<String>),
+    SpecificInterval(NaiveDateTime, Duration, Media, Option<String>),
 }
 
 pub struct Media {

@@ -1,42 +1,56 @@
-use cli_log::*;
-use std::{sync::{atomic::{AtomicBool, Ordering}, Arc}};
-use thread_priority::unix::{set_current_thread_priority};
+#[macro_use] extern crate cli_log;
+//use cli_log::*;
+use std::{path::Path, process::{exit, Command as SysCommand}};
 
 use crate::options::{parse_options, Command};
+use crate::server::run_server;
+use crate::exit_codes::*;
 
 mod options;
+mod server;
+mod exit_codes;
 
 fn main() {
     init_cli_log!();
 
     let args: Vec<String> = std::env::args().collect();
-    let opt_command: Option<Command> = parse_options(args);    
 
     // TODO: change Option to Result 
-    if let Some(command) = opt_command {
-        match command {
-            Command::Start => {
-                let sigterm: Arc<AtomicBool> = Arc::new(AtomicBool::new(false));
-                signal_hook::flag::register(signal_hook::consts::SIGTERM, Arc::clone(&sigterm))
-                    .expect("An OS error occured:");
+    if let Some(command) = parse_options(args) {
+        if let Ok(mut main_path) = std::env::current_exe() {
+            match command {
+                Command::Start => {
+                    main_path.push("scripts/is_not_already_running.sh");
+                    let mut is_not_already_running: SysCommand = SysCommand::new(main_path);
 
-                #[allow(unused_must_use)]
-                set_current_thread_priority(thread_priority::ThreadPriority::Min);
+                    if let Ok(exit_code) = is_not_already_running.status() {
+                        if !exit_code.success() {
+                            error!("There is an apifs instance already running");
+                            exit(ExitCode::AlreadyRunning as i32);
+                        }
+                    } else {
+                        error!("There was an error running a helper script");
+                        exit(ExitCode::ScriptIssue as i32);
+                    }
 
-                println!("Started successfully");
-                while !sigterm.load(Ordering::Relaxed) {
-                    println!("Working"); 
-                } 
-                println!("Stopped successfully");
-            },
-            _     =>   {
-                println!("Command not yet implemented");
+                    match run_server() {
+                        Ok(_) => {},
+                        Err(err) => {
+                            error!("{err}");
+                            exit(ExitCode::ServerRunError as i32)
+                        }
+                    }
+                },
+                Command::Stop => {
+                    main_path.push("scripts/stop_apifs.sh");
+                    SysCommand::new(main_path);    
+                },
+                _     =>   {
+                    println!("Command not yet implemented");
+                }
             }
         }
     } else {
-        return;
+        exit(1);
     }
-    
-                   
-    
 }
