@@ -1,7 +1,8 @@
 pub enum ExitCode {
-    Finished(1),
+    Finished,
     WrongArguments, 
     ScriptIssue,
     AlreadyRunning,
     ServerRunError,
+    PathError
 }

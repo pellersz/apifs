@@ -95,7 +95,6 @@ pub fn parse_options(args: Vec<String>) -> Result<Command, Error> {
                 },
 
                 "interval"  => {
-                    // TODO: change this to a Duration
                     let mut interval_time: Duration = Duration::zero();
                     while i < args.len() {
                         ensure!(i + 1 != args.len(), "{} was not provided with a parameter!", args[i]);
