@@ -1,4 +1,5 @@
 pub enum ExitCode {
+    #[allow(dead_code)]
     Finished,
     WrongArguments, 
     ScriptIssue,

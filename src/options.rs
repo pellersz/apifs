@@ -8,9 +8,9 @@ pub fn parse_options(args: Vec<String>) -> Result<Command, Error> {
 
     // from the command line arguments return the command 
     match args[1].as_str() {
-        "start"     =>  Ok(Command::Start),
-        "stop"      =>  Ok(Command::Stop),
-        "notify"    =>  { 
+        "start"         =>  Ok(Command::Start),
+        "stop"          =>  Ok(Command::Stop),
+        "notify"        =>  { 
             ensure!(args.len() >= 3, "Notify command needs a type!");
 
             let mut final_datetime: Option<NaiveDateTime> = None;
@@ -154,12 +154,12 @@ pub fn parse_options(args: Vec<String>) -> Result<Command, Error> {
                 }
             }
         },
-        "help"      =>  Ok(Command::Help),
-        "add"       =>  Ok(Command::Help),
-        "show"      =>  Ok(Command::Help),
-        "note"      =>  Ok(Command::Help),
-        "delete"    =>  Ok(Command::Help),
-        _           =>  {
+        "help" | "-h"   =>  Ok(Command::Help),
+        "add"           =>  Ok(Command::Help),
+        "show"          =>  Ok(Command::Help),
+        "note"          =>  Ok(Command::Help),
+        "delete"        =>  Ok(Command::Help),
+        _               =>  {
             bail!("{} is not a valid argument! Valid arguments are start, stop, remind, note, help, show, add, delete.", args[1]);
         }
     }  
@@ -206,7 +206,6 @@ fn parse_time(args: &Vec<String>, index: usize) -> Option<NaiveTime> {
     }
 }
 
-
 pub enum Command {
     Remind(Reminder),
     Note(Note),
@@ -221,7 +220,7 @@ pub enum Command {
 
 pub enum Reminder {
     Once(NaiveDateTime, Media, Option<String>),
-    MoreThanOnce(Vec<NaiveDateTime>, Media, Option<String>),
+    // MoreThanOnce(Vec<NaiveDateTime>, Media, Option<String>),
     Daily(NaiveTime, [bool; 7], Media, Option<String>),
     SpecificInterval(NaiveDateTime, Duration, Media, Option<String>),
 }
@@ -234,13 +233,13 @@ pub struct Media {
 pub struct Note {
     name: String,
     text: String,
-    media: Media,
+    //media: Media,
 }
 
 pub enum Data {
     Reminder(String),
     Note(String),
-    Picture(String),
-    Sound(String),
+    // Picture(String),
+    // Sound(String),
 }
 

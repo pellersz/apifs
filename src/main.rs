@@ -21,6 +21,24 @@ fn main() {
                 Ok(mut main_path) => {
                     main_path.pop();
                     match command {
+                        Command::Help => {
+                            main_path.push("help.txt");
+                            println!("{:?}", main_path);
+                            let help_txt_res: Result<Vec<u8>, _> = std::fs::read(main_path);
+                            match help_txt_res {
+                                Ok(help_txt) => {
+                                    let decoded_help_txt = String::from_utf8(help_txt).unwrap(); 
+                                    info!("{decoded_help_txt}");
+                                    print!("{decoded_help_txt}");
+                                },
+                                Err(_) => {
+                                    error!("There was an error opening \"help.txt\"");
+                                    println!("There was an error opening \"help.txt\"");
+                                    exit(ExitCode::ScriptIssue as i32);
+                                }
+                            }
+                        }
+
                         Command::Start => { 
                             main_path.push("scripts/is_not_already_running.sh"); 
                             let mut is_not_already_running: SysCommand = SysCommand::new(main_path);
@@ -49,7 +67,6 @@ fn main() {
 
                         Command::Stop => {
                             main_path.push("scripts/stop_apifs.sh");
-                            println!("{:?}", main_path);
                             #[allow(unused_must_use)]
                             SysCommand::new(main_path).exec();    
                         },
