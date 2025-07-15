@@ -30,7 +30,10 @@ Used to create notifications. The type of notification can be set with the follo
 .RS 5
 .PP
 .RE
-what do i say
+once
+.RS 6
+A notification which will only notify at a set time and date, this can be set using options
+.RE
 .RE
 .PP
 note

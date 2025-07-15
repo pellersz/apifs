@@ -1,6 +1,8 @@
 use anyhow::{bail, ensure, Error};
 use regex::Regex;
-use chrono::{Duration, NaiveDateTime, NaiveTime};
+use chrono::{Duration, NaiveDateTime, NaiveTime, TimeDelta};
+#[allow(unused_imports)]
+use std::str::FromStr;
 use std::{cmp, format};
 
 use crate::reminder::Reminder;
@@ -89,7 +91,7 @@ pub fn parse_options(args: Vec<String>) -> Result<Command, Error> {
                         }
                         i += 2;                          
                     }
-
+ 
                     if let Some(act_time) = final_time {
                         return Ok(Command::Remind(Reminder::Daily(act_time, days, Media { picture, sound }, description)));
                     }
@@ -109,17 +111,21 @@ pub fn parse_options(args: Vec<String>) -> Result<Command, Error> {
                             "-i"        => {
                                 let time_format = Regex::new(r"^([1-9][0-9]{0,8}[dhmsDHMS]){1,4}$").unwrap();
                                 
-                                ensure!(time_format.is_match(args[i + 1].as_str()), "{} is not a valid time identifier! Valid time identifiers should be in the format of %Y-%m-%d %H:%M:%S.", args[i + 1]);
+                                ensure!(
+                                    time_format.is_match(args[i + 1].as_str()), 
+                                    "{} is not a valid time identifier! Valid time identifiers should be in the format of ([1-9][0-9]{{0,8}}[dhmsDHMS]){{1,4}}.", 
+                                    args[i + 1]
+                                );
                                 let time_indicator = Regex::new(r"[dhmsDHMS]").unwrap();
                                 let mut indicator_indexes = time_indicator.find_iter(args[i + 1].as_str());
-                                let mut prev = indicator_indexes.next().unwrap().start();
+                                let mut prev = 0;
                                 let mut next: usize;
                                 loop {
                                     let next_res = indicator_indexes.next();
                                     if next_res != None { 
                                         next = next_res.unwrap().start();
-                                        let time_type = &args[i + 1][prev..prev+1];
-                                        let time = args[i + 1][prev..next].parse::<usize>().unwrap() as i64;
+                                        let time_type = &args[i + 1][next..next+1];
+                                        let time = args[i + 1][prev..next].parse::<i64>().unwrap();
                                         interval_time += match time_type {
                                             "d" => Duration::days(time),
                                             "h" => Duration::hours(time),
@@ -129,7 +135,7 @@ pub fn parse_options(args: Vec<String>) -> Result<Command, Error> {
                                                 bail!("{} is not a valid time type! Valid time types are: d, h, m, s", time_type);
                                             }
                                         };
-                                        prev = next;
+                                        prev = next + 1;
                                     } else {
                                         break;
                                     }
@@ -165,6 +171,107 @@ pub fn parse_options(args: Vec<String>) -> Result<Command, Error> {
             bail!("{} is not a valid argument! Valid arguments are start, stop, remind, note, help, show, add, delete.", args[1]);
         }
     }  
+}
+
+#[test]
+fn test_empty() {
+    let v: Vec<String> = vec![];
+    assert!(parse_options(v).is_err());
+}
+
+#[test]
+fn test_start () {
+    let Ok(res) = parse_options(vec![String::new(), String::from("start")]) else { panic!("error"); };
+    match res {
+        Command::Start => { },
+        _ => { panic!("wrong command returned"); }
+    }
+}
+
+#[test]
+fn test_stop () {
+    let Ok(res) = parse_options(vec![String::new(), String::from("stop")]) else { panic!("error"); };
+    match res {
+        Command::Stop => { },
+        _ => { panic!("wrong command returned"); }
+    }
+}
+
+#[test]
+fn test_help() {
+    let Ok(res) = parse_options(vec![String::new(), String::from("help")]) else { panic!("error"); };
+    match res {
+        Command::Help => { },
+        _ => { panic!("wrong command returned"); }
+    }
+}
+
+#[test]
+fn test_notify () {
+    let sound = String::from("s");
+    let picture = String::from("p");
+    let media = Media { sound: Some(sound.clone()), picture: Some(picture.clone()) };
+    let datetime_str = "2020-11-27 5:12:4";
+    let datetime = NaiveDateTime::parse_from_str(datetime_str, "%Y-%m-%d %H:%M:%S").expect("datetime conversion failed");
+    let datetime_string = String::from(datetime_str);
+    let time_str = "3:15:3";
+    let time = NaiveTime::parse_from_str(time_str, "%H:%M:%S").expect("time conversion failed");
+    let time_string = String::from(time_str);
+    let description = String::from("usefull description");
+    let notify = String::from("notify");
+    let opt_w = String::from("-w");
+    let opt_s = String::from("-s");
+    let opt_p = String::from("-p");
+    let opt_desc = String::from("--desc");
+
+    let Ok(res) = parse_options(
+        vec![String::new(), notify.clone(), String::from("once"), 
+                   opt_w.clone(), datetime_string.clone(), opt_s.clone(), 
+                   sound.clone(), opt_p.clone(), picture.clone(), 
+                   opt_desc.clone(), description.clone() 
+        ]
+    ) else { panic!("error"); };
+    let Command::Remind(Reminder::Once(
+            datetime_res, 
+            media_res, 
+            description_res
+    )) = res else { panic!("wrong command returned"); };
+    if datetime_res != datetime || media_res != media || description_res.unwrap() != description {
+        panic!("once test failed");
+    }
+    
+    let Ok(res) = parse_options(
+        vec![String::new(), notify.clone(), String::from("daily"), 
+                   opt_w.clone(), time_string.clone(), String::from("-d"), String::from("25"), 
+                   opt_s.clone(), sound.clone(), opt_p.clone(), 
+                   picture.clone(), opt_desc.clone(), description.clone() 
+        ]
+    ) else { panic!("error"); };
+    let Command::Remind(Reminder::Daily(
+            time_res, 
+            days, media_res, 
+            description_res
+    )) = res else { panic!("wrong command returned"); };
+    if time_res != time || media_res != media || description_res.unwrap() != description || days != [false, true, false, false, true, false, false] {
+        panic!("daily test failed");
+    }
+
+    let Ok(res) = parse_options(
+        vec![String::new(), notify.clone(), String::from("interval"), 
+                   opt_w.clone(), datetime_string.clone(), String::from("-i"), 
+                   String::from("12h2m1s"), opt_s.clone(), sound.clone(), opt_p.clone(), 
+                   picture.clone(), opt_desc.clone(), description.clone() 
+        ]
+    ) else { panic!("error"); };
+    let Command::Remind(Reminder::SpecificInterval(
+            datetime_res, 
+            duration_res, 
+            media_res, 
+            description_res
+    )) = res else { panic!("wrong command returned"); };
+    if datetime_res != datetime || duration_res != TimeDelta::seconds(1 + 60 * 2 + 12 * 3600) || media_res != media || description_res.unwrap() != description {
+        panic!("once test failed");
+    }
 }
 
 // TODO: put date format into configuration file

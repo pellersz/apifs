@@ -1,1 +1,2 @@
-14:54:20.080 [INFO] cli_log::init: Starting apifs v0.1.0 with log level DEBUG
+12:05:31.840 [INFO] cli_log::init: Starting apifs v0.1.0 with log level DEBUG
+12:05:31.841 [ERROR] apifs: gay is not a valid argument! Valid arguments are start, stop, remind, note, help, show, add, delete.

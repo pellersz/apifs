@@ -6,7 +6,7 @@ use crate::media::Media;
 pub enum Reminder {
     Once(NaiveDateTime, Media, Option<String>),
     // MoreThanOnce(Vec<NaiveDateTime>, Media, Option<String>),
-    Daily(NaiveTie, [bool; 7], Media, Option<String>),
+    Daily(NaiveTime, [bool; 7], Media, Option<String>),
     SpecificInterval(NaiveDateTime, Duration, Media, Option<String>),
 }
 
