@@ -40,6 +40,7 @@ dependencies = [
  "chrono",
  "cli-log",
  "regex",
+ "serde",
  "serde_json",
  "signal-hook",
  "thread-priority",
@@ -88,6 +89,7 @@ dependencies = [
  "iana-time-zone",
  "js-sys",
  "num-traits",
+ "serde",
  "wasm-bindgen",
  "windows-link",
 ]

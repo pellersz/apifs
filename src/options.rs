@@ -3,10 +3,12 @@ use regex::Regex;
 use chrono::{Duration, NaiveDateTime, NaiveTime};
 use std::{cmp, format};
 
+use crate::reminder::Reminder;
+use crate::media::Media;
+
 pub fn parse_options(args: Vec<String>) -> Result<Command, Error> {
     ensure!(args.len() >= 2, "Too few arguments");
 
-    // from the command line arguments return the command 
     match args[1].as_str() {
         "start"         =>  Ok(Command::Start),
         "stop"          =>  Ok(Command::Stop),
@@ -216,18 +218,6 @@ pub enum Command {
     Delete(String),
     Show(Data),
     NoCommand
-}
-
-pub enum Reminder {
-    Once(NaiveDateTime, Media, Option<String>),
-    // MoreThanOnce(Vec<NaiveDateTime>, Media, Option<String>),
-    Daily(NaiveTime, [bool; 7], Media, Option<String>),
-    SpecificInterval(NaiveDateTime, Duration, Media, Option<String>),
-}
-
-pub struct Media {
-    picture: Option<String>,
-    sound: Option<String>,
 }
 
 pub struct Note {

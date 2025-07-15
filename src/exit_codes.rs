@@ -2,8 +2,8 @@ pub enum ExitCode {
     #[allow(dead_code)]
     Finished,
     WrongArguments, 
-    ScriptIssue,
+    FileError,
     AlreadyRunning,
     ServerRunError,
-    PathError
+    PathError,
 }

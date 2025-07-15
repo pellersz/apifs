@@ -1,0 +1,52 @@
+.\" Manpage for apifs.
+.\" Contact pappgellert2003@gmail.com to correct errors or typos.
+.TH man 1 "14 Jul 2025" "0.1" "apifs man page"
+.SH NAME
+apifs \- create, manage notifications and notes 
+.SH SYNOPSIS
+apifs <command> [options]
+.SH DESCRIPTION
+apifs is a CLI tool for setting notifications and notes. Notifications can have associated cover images and sounds played when appearing.
+.SH COMMANDS
+.PP
+help
+.RS 4
+Prints out the synopsis
+.RE
+.PP
+start
+.RS 4
+Starts the notification server
+.RE
+.PP
+stop
+.RS 4
+Stops the notification server
+.RE
+.PP
+notify
+.RS 4
+Used to create notifications. The type of notification can be set with the following specifiers.
+.RS 5
+.PP
+.RE
+what do i say
+.RE
+.PP
+note
+.RS 4
+prints out the synopsis
+.RE
+.PP
+show
+.RS 4
+prints out the synopsis
+
+.SH OPTIONS
+The nuseradd does not take any options. However, you can supply username.
+.SH SHOUTOUT TO
+git(1), tldr(1)
+.SH BUGS
+Bugs? That's what we in the business call features, no need to think about them.
+.SH AUTHOR
+CrackPython (pappgellert2003@gmail.com)

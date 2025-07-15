@@ -1,15 +1,17 @@
 #[macro_use] extern crate cli_log;
 use std::os::unix::process::CommandExt;
-//use cli_log::*;
 use std::process::{exit, Command as SysCommand};
 
 use crate::options::{parse_options, Command};
 use crate::server::run_server;
 use crate::exit_codes::*;
+use serde_json::to_writer_pretty;
 
 mod options;
 mod server;
 mod exit_codes;
+mod reminder;
+mod media;
 
 fn main() {
     init_cli_log!();
@@ -23,7 +25,6 @@ fn main() {
                     match command {
                         Command::Help => {
                             main_path.push("help.txt");
-                            println!("{:?}", main_path);
                             let help_txt_res: Result<Vec<u8>, _> = std::fs::read(main_path);
                             match help_txt_res {
                                 Ok(help_txt) => {
@@ -31,10 +32,10 @@ fn main() {
                                     info!("{decoded_help_txt}");
                                     print!("{decoded_help_txt}");
                                 },
-                                Err(_) => {
-                                    error!("There was an error opening \"help.txt\"");
+                                Err(err) => {
+                                    error!("There was an error opening \"help.txt\": {err}");
                                     println!("There was an error opening \"help.txt\"");
-                                    exit(ExitCode::ScriptIssue as i32);
+                                    exit(ExitCode::FileError as i32);
                                 }
                             }
                         }
@@ -52,7 +53,7 @@ fn main() {
                             } else {
                                 error!("There was an error running a helper script");
                                 eprintln!("There was an error running a helper script");
-                                exit(ExitCode::ScriptIssue as i32);
+                                exit(ExitCode::FileError as i32);
                             }
 
                             match run_server() {
@@ -69,6 +70,28 @@ fn main() {
                             main_path.push("scripts/stop_apifs.sh");
                             #[allow(unused_must_use)]
                             SysCommand::new(main_path).exec();    
+                        },
+
+                        Command::Remind(reminder) => {
+                            main_path.push("data.json");
+                            let data_file_res: Result<std::fs::File, std::io::Error> = std::fs::File::create(main_path);
+                            match data_file_res {
+                                Ok(data_file) => {
+                                    match to_writer_pretty(data_file, &reminder) {
+                                        Ok(_) => {},
+                                        Err(err) => {
+                                            error!("There was an error writing to \"data.json\":{err}");
+                                            println!("There was an error writing to \"data.json\"");
+                                            exit(ExitCode::FileError as i32);        
+                                        }
+                                    }
+                                },
+                                Err(err) => {
+                                    error!("There was an error opening \"data.json\":{err}");
+                                    println!("There was an error opening \"data.json\"");
+                                    exit(ExitCode::FileError as i32);
+                                }
+                            }
                         },
 
                         _     =>   {
