@@ -13,6 +13,7 @@ mod exit_codes;
 mod reminder;
 mod media;
 
+// TODO: make a function to call commands, and replace the boilerplate
 fn main() {
     init_cli_log!();
 
