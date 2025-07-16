@@ -35,12 +35,16 @@ pub fn parse_options(args: Vec<String>) -> Result<Command, Error> {
                                 let datetime = parse_datetime(&args, i + 1);
                                 ensure!(datetime != None, "{} is not a valid date!\nValid dates should be in the format of %Y-%m-%d %H:%M:%S.", args[i + 1]);
                                 final_datetime = datetime;
+                                i += 1;
                             }, 
                             "-p"        => picture = Some(args[i + 1].clone()),
                             "-s"        => sound = Some(args[i + 1].clone()),
-                            "--desc"    => description = Some(args[i + 1].clone()),
+                            "--desc"    => { 
+                                description = Some(args.as_slice()[i+1..].join(" "));
+                                i = args.len(); 
+                            },
                             _           => {
-                                bail!("{}: no such option", args[i + 1]);
+                                bail!("{}: no such option", args[i]);
                             }
                         }
                         i += 2;                          
@@ -60,7 +64,7 @@ pub fn parse_options(args: Vec<String>) -> Result<Command, Error> {
                         match args[i].as_str() {
                             "-w"        => {
                                 let time = parse_time(&args, i + 1);
-                                ensure!(time != None, "{} is not a valid date! Valid dates should be in the format of %Y-%m-%d %H:%M:%S.", args[i + 1]);
+                                ensure!(time != None, "{} is not a valid time! Valid time should be in the format of %H:%M:%S.", args[i + 1]);
                                 final_time = time;
                             }, 
                             "-d"        => {
@@ -80,13 +84,16 @@ pub fn parse_options(args: Vec<String>) -> Result<Command, Error> {
                                         days[j] = true;
                                     }
                                 } else { 
-                                    days = [true;7];
+                                    days = [true; 7];
                                     warn!("{} in not a valid time format. Valid time formats are <n>-<m> and <n1><n2>.. where <_> are numbers from 1-7, notification set to all dates.", args[i + 1]);
                                 }
                             }
                             "-p"        => picture = Some(args[i + 1].clone()),
                             "-s"        => sound = Some(args[i + 1].clone()),
-                            "--desc"    => description = Some(args[i + 1].clone()),
+                            "--desc"    => { 
+                                description = Some(args.as_slice()[i+1..].join(" "));
+                                i = args.len(); 
+                            },
                             _           => {
                                 bail!("{}: no such option", args[i + 1]);
                             }
@@ -109,6 +116,7 @@ pub fn parse_options(args: Vec<String>) -> Result<Command, Error> {
                                 let datetime = parse_datetime(&args, i + 1);
                                 ensure!(datetime != None, "{} is not a valid date! Valid dates should be in the format of %Y-%m-%d %H:%M:%S.", args[i + 1]);
                                 final_datetime = datetime;
+                                i += 1;
                             }, 
                             "-i"        => {
                                 let time_format = Regex::new(r"^([1-9][0-9]{0,8}[dhmsDHMS]){1,4}$").unwrap();
@@ -145,7 +153,10 @@ pub fn parse_options(args: Vec<String>) -> Result<Command, Error> {
                             },
                             "-p"        => picture = Some(args[i + 1].clone()),
                             "-s"        => sound = Some(args[i + 1].clone()),
-                            "--desc"    => description = Some(args[i + 1].clone()),
+                            "--desc"    => { 
+                                description = Some(args.as_slice()[i+1..].join(" "));
+                                i = args.len(); 
+                            },
                             _           => {
                                 bail!("{}: no such option", args[i + 1]);
                             }
@@ -278,11 +289,11 @@ fn test_notify () {
 
 // TODO: put date format into configuration file
 fn parse_datetime(args: &Vec<String>, index: usize) -> Option<NaiveDateTime> {
-    if args.len() < index {
+    if args.len() + 1 < index {
         return None
     }
 
-    let arg = &args[index];
+    let arg = &(args[index].clone() + &args[index + 1]);
     let mut date_res = NaiveDateTime::parse_from_str(arg, "%Y-%m-%d %H:%M:%S");
     
     if let Ok(date) = date_res {
