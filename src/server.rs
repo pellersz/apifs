@@ -2,6 +2,8 @@ use std::{sync::{atomic::AtomicBool, Arc}, time::Duration};
 
 use anyhow::{ensure, Error};
 
+use crate::file_manipulation::get_data;
+
 pub fn run_server() -> Result<(), Error> {
     let sigterm: Arc<AtomicBool> = Arc::new(AtomicBool::new(false));
     ensure!(
@@ -12,15 +14,16 @@ pub fn run_server() -> Result<(), Error> {
     #[allow(unused_must_use)]
     thread_priority::unix::set_current_thread_priority(thread_priority::ThreadPriority::Min);
  
-    let file_res = std::fs::File::open("data.json");
-    ensure!(file_res.is_ok(), "There was an error opening \"data.json\"");
-    let file = file_res.unwrap();
-    let data = serde_json::;
-    println!("Server started");
-    while !sigterm.load(std::sync::atomic::Ordering::Relaxed) {
-         std::thread::sleep(Duration::from_secs(1));
+    let data_res = get_data();
+    match data_res {
+        Ok(data) => {
+            println!("Server started");
+            while !sigterm.load(std::sync::atomic::Ordering::Relaxed) {
+                 std::thread::sleep(Duration::from_secs(1));
+            }
+            println!("Server stopped");
+            Ok(())
+        }, 
+        Err(err) => Err(err)
     }
-    println!("Server stopped");
-
-    return Ok(()); 
 }

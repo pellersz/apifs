@@ -1,19 +1,20 @@
 use anyhow::{ensure, Error};
 use serde_json::to_writer_pretty;
+use lazy_static::lazy_static;
 use std::{fs::File, io::{BufRead, BufReader}, path::PathBuf, process::Command};
 
 use crate::apifs_object::ApifsObject;
 
-fn get_mainpath() -> PathBuf {
-    static mut MAIN_PATH: Option<PathBuf> = None;
-    unsafe {
-        if MAIN_PATH.is_none() {
-            let main_path_res = std::env::current_exe();
-            if main_path_res.is_err() { panic!("Could not get path to program"); }
-            MAIN_PATH = Some(main_path_res.unwrap());
-        }
-        return MAIN_PATH.clone().unwrap();
-    } 
+lazy_static! {
+    static ref MAIN_PATH: PathBuf = { 
+        let main_path_res = std::env::current_exe();
+        if main_path_res.is_err() { panic!("Could not get path to program"); } 
+        main_path_res.unwrap()
+    };
+}
+
+pub fn get_mainpath() -> PathBuf {
+    return MAIN_PATH.clone();
 }
 
 pub fn get_data() -> Result<ApifsObject, Error> {
