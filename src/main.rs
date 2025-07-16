@@ -1,17 +1,20 @@
 #[macro_use] extern crate cli_log;
+use serde_json::to_writer_pretty;
 use std::os::unix::process::CommandExt;
 use std::process::{exit, Command as SysCommand};
+use std::fs::File;
 
 use crate::options::{parse_options, Command};
 use crate::server::run_server;
 use crate::exit_codes::*;
-use serde_json::to_writer_pretty;
 
 mod options;
 mod server;
 mod exit_codes;
 mod reminder;
 mod media;
+mod file_manipulation;
+mod apifs_object;
 
 // TODO: make a function to call commands, and replace the boilerplate
 fn main() {
@@ -73,9 +76,13 @@ fn main() {
                             SysCommand::new(main_path).exec();    
                         },
 
+                        // TODO: datafile manipulation in another module
                         Command::Remind(reminder) => {
                             main_path.push("data.json");
-                            let data_file_res: Result<std::fs::File, std::io::Error> = std::fs::File::create(main_path);
+                            let data_file_res = File::options()
+                                .read(true)
+                                .write(true)
+                                .open(main_path);
                             match data_file_res {
                                 Ok(data_file) => {
                                     match to_writer_pretty(data_file, &reminder) {

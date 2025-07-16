@@ -2,7 +2,7 @@ use chrono::{Duration, NaiveDateTime, NaiveTime};
 
 use crate::media::Media;
 
-#[derive(serde::Serialize)]
+#[derive(serde::Serialize, serde::Deserialize)]
 pub enum Reminder {
     Once(NaiveDateTime, Media, Option<String>),
     // MoreThanOnce(Vec<NaiveDateTime>, Media, Option<String>),

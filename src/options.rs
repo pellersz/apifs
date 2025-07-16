@@ -1,6 +1,7 @@
 use anyhow::{bail, ensure, Error};
 use regex::Regex;
 use chrono::{Duration, NaiveDateTime, NaiveTime, TimeDelta};
+use serde::Deserialize;
 #[allow(unused_imports)]
 use std::str::FromStr;
 use std::{cmp, format};
@@ -327,6 +328,7 @@ pub enum Command {
     NoCommand
 }
 
+#[derive(serde::Serialize, serde::Deserialize)]
 pub struct Note {
     name: String,
     text: String,

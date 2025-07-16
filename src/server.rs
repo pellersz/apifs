@@ -11,13 +11,14 @@ pub fn run_server() -> Result<(), Error> {
     
     #[allow(unused_must_use)]
     thread_priority::unix::set_current_thread_priority(thread_priority::ThreadPriority::Min);
-  
-    let reader = std::fs::File::open("data.json");
-
+ 
+    let file_res = std::fs::File::open("data.json");
+    ensure!(file_res.is_ok(), "There was an error opening \"data.json\"");
+    let file = file_res.unwrap();
+    let data = serde_json::;
     println!("Server started");
     while !sigterm.load(std::sync::atomic::Ordering::Relaxed) {
-
-        std::thread::sleep(Duration::from_secs(1));
+         std::thread::sleep(Duration::from_secs(1));
     }
     println!("Server stopped");
 
