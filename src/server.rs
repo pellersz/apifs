@@ -1,4 +1,4 @@
-use std::sync::{atomic::AtomicBool, Arc};
+use std::{sync::{atomic::AtomicBool, Arc}, time::Duration};
 
 use anyhow::{ensure, Error};
 
@@ -11,10 +11,13 @@ pub fn run_server() -> Result<(), Error> {
     
     #[allow(unused_must_use)]
     thread_priority::unix::set_current_thread_priority(thread_priority::ThreadPriority::Min);
-    
+  
+    let reader = std::fs::File::open("data.json");
+
     println!("Server started");
     while !sigterm.load(std::sync::atomic::Ordering::Relaxed) {
-        println!("I live");
+
+        std::thread::sleep(Duration::from_secs(1));
     }
     println!("Server stopped");
 

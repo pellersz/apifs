@@ -3,3 +3,4 @@ target/*
 
 target/debug/*
 !target/debug/scripts/
+*.log
