@@ -2,8 +2,9 @@
 use std::os::unix::process::CommandExt;
 use std::process::{exit, Command as SysCommand};
 
+use crate::command::Command;
 use crate::file_manipulation::{get_data, get_mainpath, get_program, update_data};
-use crate::options::{parse_options, Command};
+use crate::options::parse_options;
 use crate::server::run_server;
 use crate::exit_codes::*;
 
@@ -14,6 +15,9 @@ mod reminder;
 mod media;
 mod file_manipulation;
 mod apifs_object;
+mod command;
+mod note;
+mod data;
 
 fn main() {
     init_cli_log!();

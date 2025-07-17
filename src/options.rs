@@ -2,13 +2,14 @@ use anyhow::{bail, ensure, Error};
 use regex::Regex;
 #[allow(unused_imports)]
 use chrono::{Duration, NaiveDateTime, NaiveTime, TimeDelta};
-use serde::{Deserialize, Serialize};
 #[allow(unused_imports)]
 use std::str::FromStr;
 use std::{cmp, format};
 
+use crate::note::Note;
 use crate::reminder::Reminder;
 use crate::media::Media;
+use crate::command::Command;
 
 pub fn parse_options(args: Vec<String>) -> Result<Command, Error> {
     ensure!(args.len() >= 2, "Too few arguments");
@@ -178,7 +179,34 @@ pub fn parse_options(args: Vec<String>) -> Result<Command, Error> {
         "help" | "-h"   =>  Ok(Command::Help),
         "add"           =>  Ok(Command::Help),
         "show"          =>  Ok(Command::Help),
-        "note"          =>  Ok(Command::Help),
+        "note"          =>  {
+            ensure!(args.len() >= 3, "Note command needs something to note!");
+
+            let mut description: Option<String> = None;
+            let mut name: Option<String> = None;
+            let mut i: usize = 2;
+
+            while i < args.len() {
+                ensure!(args.len() != i + 1, "{} was not provided with a parameter!", args[i]);
+                match args[i].as_str() {
+                    "-n"        => name = Some(args[i + 1].clone()),
+                    "--desc"    => { 
+                        description = Some(args.as_slice()[i+1..].join(" "));
+                        i = args.len(); 
+                    },
+                    _           => {
+                        bail!("{}: no such option", args[i]);
+                    }
+                }
+                i += 2;                          
+            }
+
+            if let (Some(act_description), Some(act_name)) = (description, name) {
+                return Ok(Command::Note(Note { name: act_name, text: act_description }));
+            }
+            
+            bail!("No name or descriptions provided to note! note needs the -n and the --desc fields to be set");
+        },
         "delete"        =>  Ok(Command::Help),
         _               =>  {
             bail!("{} is not a valid argument! Valid arguments are start, stop, remind, note, help, show, add, delete.", args[1]);
@@ -230,26 +258,39 @@ fn test_notify () {
     let time_str = "3:15:3";
     let time = NaiveTime::parse_from_str(time_str, "%H:%M:%S").expect("time conversion failed");
     let time_string = String::from(time_str);
-    let description = String::from("usefull description");
+    let description1 = String::from("usefull description");
+    let description2 = String::from("useless description");
     let notify = String::from("notify");
     let opt_w = String::from("-w");
     let opt_s = String::from("-s");
     let opt_p = String::from("-p");
     let opt_desc = String::from("--desc");
 
-    let Ok(res) = parse_options(
+    #[allow(unused_assignments)]
+    let mut res = Command::NoCommand;
+    match parse_options(
         vec![String::new(), notify.clone(), String::from("once"), 
-                   opt_w.clone(), datetime_string.clone(), opt_s.clone(), 
-                   sound.clone(), opt_p.clone(), picture.clone(), 
-                   opt_desc.clone(), description.clone() 
+                   opt_w.clone(), String::from(&datetime_string[0..10]), String::from(&datetime_string[11..]),
+                   opt_s.clone(), sound.clone(), opt_p.clone(), 
+                   picture.clone(), opt_desc.clone(), description1.clone(), 
+                   description2.clone() 
         ]
-    ) else { panic!("error"); };
+    )  { 
+        Ok(command) => {
+            res = command;
+        },
+        Err(err) => {
+            panic!("{err}");
+        }
+    };
     let Command::Remind(Reminder::Once(
             datetime_res, 
             media_res, 
             description_res
     )) = res else { panic!("wrong command returned"); };
-    if datetime_res != datetime || media_res != media || description_res.unwrap() != description {
+    if  datetime_res != datetime || 
+        media_res != media || 
+        description_res.unwrap() != description1.clone() + " " + &description2 {
         panic!("once test failed");
     }
     
@@ -257,7 +298,7 @@ fn test_notify () {
         vec![String::new(), notify.clone(), String::from("daily"), 
                    opt_w.clone(), time_string.clone(), String::from("-d"), String::from("25"), 
                    opt_s.clone(), sound.clone(), opt_p.clone(), 
-                   picture.clone(), opt_desc.clone(), description.clone() 
+                   picture.clone(), opt_desc.clone(), description1.clone() 
         ]
     ) else { panic!("error"); };
     let Command::Remind(Reminder::Daily(
@@ -265,15 +306,19 @@ fn test_notify () {
             days, media_res, 
             description_res
     )) = res else { panic!("wrong command returned"); };
-    if time_res != time || media_res != media || description_res.unwrap() != description || days != [false, true, false, false, true, false, false] {
+    if  time_res != time || 
+        media_res != media || 
+        description_res.unwrap() != description1 || 
+        days != [false, true, false, false, true, false, false] {
         panic!("daily test failed");
     }
 
     let Ok(res) = parse_options(
         vec![String::new(), notify.clone(), String::from("interval"), 
-                   opt_w.clone(), datetime_string.clone(), String::from("-i"), 
-                   String::from("12h2m1s"), opt_s.clone(), sound.clone(), opt_p.clone(), 
-                   picture.clone(), opt_desc.clone(), description.clone() 
+                   opt_w.clone(), String::from(&datetime_string[0..10]), String::from(&datetime_string[11..]), 
+                   String::from("-i"), String::from("12h2m1s"), opt_s.clone(), 
+                   sound.clone(), opt_p.clone(), picture.clone(), 
+                   opt_desc.clone(), description1.clone() 
         ]
     ) else { panic!("error"); };
     let Command::Remind(Reminder::SpecificInterval(
@@ -282,8 +327,25 @@ fn test_notify () {
             media_res, 
             description_res
     )) = res else { panic!("wrong command returned"); };
-    if datetime_res != datetime || duration_res != TimeDelta::seconds(1 + 60 * 2 + 12 * 3600) || media_res != media || description_res.unwrap() != description {
-        panic!("once test failed");
+    if  datetime_res != datetime || 
+        duration_res != TimeDelta::seconds(1 + 60 * 2 + 12 * 3600) || 
+        media_res != media || 
+        description_res.unwrap() != description1 {
+        panic!("interval test failed");
+    }
+}
+
+#[test]
+fn test_note() {
+    let Ok(res) = parse_options(
+        vec![String::new(), String::from("note"), String::from("-n"), 
+                   String::from("Jhon"), String::from("--desc"), String::from("cool"), 
+                   String::from("not")
+        ]
+    ) else { panic!("error"); };
+    let Command::Note(note) = res else { panic!("wrong command returned"); };
+    if note.name != String::from("Jhon") || note.text != String::from("cool not") {
+        panic!("note test failed");
     }
 }
 
@@ -293,7 +355,7 @@ fn parse_datetime(args: &Vec<String>, index: usize) -> Option<NaiveDateTime> {
         return None
     }
 
-    let arg = &(args[index].clone() + &args[index + 1]);
+    let arg = &(args[index].clone() + &args[index + 1]); 
     let mut date_res = NaiveDateTime::parse_from_str(arg, "%Y-%m-%d %H:%M:%S");
     
     if let Ok(date) = date_res {
@@ -326,31 +388,5 @@ fn parse_time(args: &Vec<String>, index: usize) -> Option<NaiveTime> {
             None
         }
     }
-}
-
-pub enum Command {
-    Remind(Reminder),
-    Note(Note),
-    Start,
-    Stop,
-    Help,
-    AddMedia(String, String),
-    Delete(String),
-    Show(Data),
-    NoCommand
-}
-
-#[derive(Serialize, Deserialize)]
-pub struct Note {
-    name: String,
-    text: String,
-    //media: Media,
-}
-
-pub enum Data {
-    Reminder(String),
-    Note(String),
-    // Picture(String),
-    // Sound(String),
 }
 

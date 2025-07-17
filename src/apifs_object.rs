@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::{options::Note, reminder::Reminder};
+use crate::{note::Note, reminder::Reminder};
 
 #[derive(Default, Deserialize, Serialize)]
 pub struct ApifsObject {
