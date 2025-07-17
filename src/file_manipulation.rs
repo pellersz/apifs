@@ -19,6 +19,7 @@ pub fn get_mainpath() -> PathBuf {
     return MAIN_PATH.clone();
 }
 
+// TODO: do these with locks, thank you
 pub fn get_data() -> Result<ApifsObject, Error> {
     let mut main_path = get_mainpath();     
 

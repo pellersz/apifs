@@ -19,6 +19,7 @@ mod command;
 mod note;
 mod data;
 
+//TODO: function parameters to be coerible
 fn main() {
     init_cli_log!();
 

@@ -1,4 +1,5 @@
 use anyhow::{bail, ensure, Error};
+use chrono::{Datelike, Days, Local};
 use regex::Regex;
 #[allow(unused_imports)]
 use chrono::{Duration, NaiveDateTime, NaiveTime, TimeDelta};
@@ -11,6 +12,7 @@ use crate::reminder::Reminder;
 use crate::media::Media;
 use crate::command::Command;
 
+// TODO: if you are bored, you can try to throw away this garbaggio and use clap
 pub fn parse_options(args: Vec<String>) -> Result<Command, Error> {
     ensure!(args.len() >= 2, "Too few arguments");
 
@@ -52,7 +54,11 @@ pub fn parse_options(args: Vec<String>) -> Result<Command, Error> {
                     }
 
                     if let Some(act_datetime) = final_datetime {
-                        return Ok(Command::Remind(Reminder::Once(act_datetime, Media { picture, sound }, description)));
+                        return Ok(Command::Remind(Reminder::Once(
+                                    act_datetime, 
+                                    Media { picture, sound }, 
+                                    description
+                        )));
                     }
                     
                     bail!("No date and time provided to notification! notify once needs the -w field to be set");
@@ -103,7 +109,14 @@ pub fn parse_options(args: Vec<String>) -> Result<Command, Error> {
                     }
  
                     if let Some(act_time) = final_time {
-                        return Ok(Command::Remind(Reminder::Daily(act_time, days, Media { picture, sound }, description)));
+                        let last_day = Local::now().naive_local().date() - TimeDelta::days(1);
+                        return Ok(Command::Remind(Reminder::Daily(
+                                    act_time, 
+                                    days, 
+                                    last_day,
+                                    Media { picture, sound }, 
+                                    description
+                        )));
                     }
                     bail!("No date and time provided to notification! notify daily needs the -w field to be set");
                 },
@@ -166,7 +179,12 @@ pub fn parse_options(args: Vec<String>) -> Result<Command, Error> {
                     }
 
                     if let Some(act_datetime) = final_datetime {
-                        return Ok(Command::Remind(Reminder::SpecificInterval(act_datetime, interval_time, Media { picture, sound }, description)));
+                        return Ok(Command::Remind(Reminder::SpecificInterval(
+                                    act_datetime, 
+                                    interval_time, 
+                                    Media { picture, sound }, 
+                                    description
+                        )));
                     }
                     bail!("No date and time provided to notification! notify daily needs the -w field to be set");
                 },
@@ -177,8 +195,8 @@ pub fn parse_options(args: Vec<String>) -> Result<Command, Error> {
             }
         },
         "help" | "-h"   =>  Ok(Command::Help),
-        "add"           =>  Ok(Command::Help),
-        "show"          =>  Ok(Command::Help),
+        "add"           =>  Ok(Command::NoCommand),
+        "show"          =>  Ok(Command::NoCommand),
         "note"          =>  {
             ensure!(args.len() >= 3, "Note command needs something to note!");
 
@@ -207,7 +225,7 @@ pub fn parse_options(args: Vec<String>) -> Result<Command, Error> {
             
             bail!("No name or descriptions provided to note! note needs the -n and the --desc fields to be set");
         },
-        "delete"        =>  Ok(Command::Help),
+        "delete"        =>  Ok(Command::NoCommand),
         _               =>  {
             bail!("{} is not a valid argument! Valid arguments are start, stop, remind, note, help, show, add, delete.", args[1]);
         }
@@ -301,9 +319,13 @@ fn test_notify () {
                    picture.clone(), opt_desc.clone(), description1.clone() 
         ]
     ) else { panic!("error"); };
+    
+    let last_day = Local::now().naive_local().date() - TimeDelta::days(1);
     let Command::Remind(Reminder::Daily(
             time_res, 
-            days, media_res, 
+            days,
+            last_day,      
+            media_res, 
             description_res
     )) = res else { panic!("wrong command returned"); };
     if  time_res != time || 

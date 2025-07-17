@@ -1,29 +1,101 @@
-use std::{sync::{atomic::AtomicBool, Arc}, time::Duration};
-
+use std::{sync::{atomic::{AtomicBool, Ordering}, Arc}, thread::sleep, time::Duration};
+use chrono::{Datelike, Local};
+use signal_hook::{flag, consts::{SIGTERM, SIGUSR1}};
+use thread_priority::{ThreadPriority, unix::set_current_thread_priority};
 use anyhow::{ensure, Error};
 
-use crate::file_manipulation::get_data;
+use crate::{file_manipulation::{get_data, update_data}, media::Media, reminder::Reminder};
 
 pub fn run_server() -> Result<(), Error> {
-    let sigterm: Arc<AtomicBool> = Arc::new(AtomicBool::new(false));
+    let sigterm = Arc::new(AtomicBool::new(false));
+    let sigupdate = Arc::new(AtomicBool::new(false));
     ensure!(
-        signal_hook::flag::register(signal_hook::consts::SIGTERM, sigterm.clone()).is_ok(),
+        flag::register(SIGTERM, sigterm.clone()).is_ok() &&
+        flag::register(SIGUSR1, sigupdate.clone()).is_ok(),
         "Could not register sigterm"
     );
     
-    #[allow(unused_must_use)]
-    thread_priority::unix::set_current_thread_priority(thread_priority::ThreadPriority::Min);
+    let _ = set_current_thread_priority(ThreadPriority::Min);
  
     let data_res = get_data();
     match data_res {
-        Ok(data) => {
+        Ok(mut data) => {
             println!("Server started");
-            while !sigterm.load(std::sync::atomic::Ordering::Relaxed) {
-                 std::thread::sleep(Duration::from_secs(1));
+            while !sigterm.load(Ordering::Relaxed) { 
+                if sigupdate.load(Ordering::Relaxed) {
+                    let data_res = get_data();
+                    match data_res {
+                        Ok(new_data) => { data.reminders = new_data.reminders; },
+                        Err(err) => { warn!("Could not update reminder data{err}"); }
+                    }
+                }
+    
+                let reminders = &mut data.reminders;
+                let mut to_remove: Vec<usize> = Vec::new();
+                let mut changed = false;
+                for i in 0..reminders.len() {
+                    match &reminders[i] {
+                        Reminder::Once(
+                            datetime, 
+                            media, 
+                            description
+                        ) => {
+                            if Local::now().naive_local() >= *datetime {
+                                notify(description, media);
+                                changed = true;
+                                to_remove.push(i);
+                            }
+                        },
+                        Reminder::Daily(
+                            time, 
+                            days, 
+                            last_day, 
+                            media, 
+                            description
+                        ) => {
+                            let datetime = Local::now().naive_local();
+                            if datetime.time() >= *time && datetime.date() != *last_day && days[datetime.weekday() as usize] {
+                                notify(description, media);
+                                changed = true;
+                                // This might not be the best way, maybe i should have put some
+                                // struct here to achieve updating a value, idk, possibly fix in
+                                // future? (similar with specific interval)
+                                reminders[i] = Reminder::Daily(*time, *days, datetime.date(), media.clone(), description.clone());         
+                            }
+                        },
+                        Reminder::SpecificInterval(
+                            datetime, 
+                            duration, 
+                            media, 
+                            description
+                        ) => {
+                            if Local::now().naive_local() >= *datetime {
+                                notify(description, media);
+                                changed = true;
+                                reminders[i] = Reminder::SpecificInterval(*datetime + *duration, *duration, media.clone(), description.clone());
+                            }
+                        }
+                    }
+                }
+                if changed {
+                    for i in to_remove.iter().rev() {
+                        reminders.remove(*i);
+                    }
+                    match update_data(&data) {
+                        Ok(_) => {},
+                        Err(err) => { error!("Could not update data: {err}"); }
+                    }
+                }
+                sleep(Duration::from_secs(1));
             }
             println!("Server stopped");
             Ok(())
         }, 
         Err(err) => Err(err)
     }
+}
+
+// TODO: implement this shit for real
+fn notify(description: &Option<String>, media: &Media) {
+    println!("{:?} {:?} {:?}", description, media.sound, media.picture);   
 }
