@@ -1,11 +1,10 @@
-#[allow(unused_imports)]
-use std::{os::unix::process::CommandExt, path::{Path, PathBuf}, process::Command as SysCommand, time::Duration};
+use std::{path::PathBuf, process::Command as SysCommand};
 
 #[test]
 fn test() {
     let mut main_path = std::env::current_exe().unwrap();
     main_path.pop();
- 
+
     let mut temp: PathBuf = Default::default();
     main_path.clone_into(&mut temp);
     temp.pop();
@@ -20,11 +19,11 @@ fn test() {
     temp.push("scripts/is_not_already_running.sh");
     let mut is_not_already_running: SysCommand = SysCommand::new(&temp);
     if let Ok(exit_code) = is_not_already_running.status() {
-        if exit_code.success() { 
+        if exit_code.success() {
             panic!("Server did not start, or stopped");
         }
     }
-    
+
     main_path.clone_into(&mut temp);
     temp.pop();
     temp.push("apifs");
@@ -37,9 +36,8 @@ fn test() {
     temp.push("scripts/is_not_already_running.sh");
     let mut is_not_already_running: SysCommand = SysCommand::new(&temp);
     if let Ok(exit_code) = is_not_already_running.status() {
-        if !exit_code.success() { 
+        if !exit_code.success() {
             panic!("Server did not stop");
         }
     }
-    
 }

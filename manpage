@@ -32,21 +32,60 @@ Used to create notifications. The type of notification can be set with the follo
 .RE
 once
 .RS 6
-A notification which will only notify at a set time and date, this can be set using options
+A notification which will only notify at a set time and date. This can be set using options
+.sp
+.RE
+daily
+.RS 6
+Notification which will notify at a set time of day. This and days to notify on can be set using options
+.sp
+.RE
+interval
+.RS 6
+Notification which will notify in a set time interval from a starting time. These can be set using options
+.RE
 .RE
 .RE
 .PP
 note
 .RS 4
-prints out the synopsis
+Used to create a note. To set name and text for the note use options
 .RE
 .PP
 show
 .RS 4
-prints out the synopsis
+Yet to be implemented
 
 .SH OPTIONS
-The nuseradd does not take any options. However, you can supply username.
+.PP
+\-w
+.RS 4
+With noitfy once it specifies the date and time to remind. With notify daily it sets the time of day to remind. With notify interval it sets the date and time for the first notification
+.sp
+.RE
+\-d
+.RS 4
+Used to set the days on which a daily notification will happen. The format should be conform [1-7]{1-7} or [1-7]-[1-7] (ex. 325 or 2-5).
+.sp
+.RE
+\-i
+.RS 4
+Used to set the duration between notifications with notify interval.
+.sp
+.RE
+\-s
+.RS 4
+Used to set sound for notification sound
+.sp
+.RE
+\-p
+.RS 4
+Used to set picture for notification 
+.sp
+.RE
+\--desc
+.RS 4
+Used to set description for notifications and notes. Note that this needs to be the last option, because everything after it will be interpreted as part of --desc 
 .SH SHOUTOUT TO
 git(1), tldr(1)
 .SH BUGS

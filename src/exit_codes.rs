@@ -1,6 +1,6 @@
 pub enum ExitCode {
     Finished,
-    WrongArguments, 
+    WrongArguments,
     FileError,
     AlreadyRunning,
     ServerRunError,
