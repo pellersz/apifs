@@ -306,23 +306,44 @@ fn parse_note(args: &Vec<String>) -> Result<Command, Error> {
     );
 }
 
-fn parse_show(args: &Vec<String>) -> Result<Command, Error> {
+fn parse_select(args: &Vec<String>) -> Result<Data, Error> {
     if args.len() == 2 {
-        return Ok(Command::Show(Data::All));
+        return Ok(Data::All);
     }
     ensure!(
         args.len() == 4,
-        "The show command either needs 0 options, or an option and a specifier for it"
+        "The command either needs 0 options, or an option and a specifier for it"
     );
     match args[2].as_str() {
         "-r" => {
             if let Ok(id) = args[3].parse::<usize>() {
-                return Ok(Command::Show(Data::Reminder(id)));
+                return Ok(Data::Reminder(id));
             }
             bail!("Not valid number provided for reminder");
         }
-        "-n" => Ok(Command::Show(Data::Note(args[3].clone()))),
-        _ => bail!("{}: no such option for show", args[3]),
+        "-n" => Ok(Data::Note(args[3].clone())),
+        _ => bail!("{}: no such option for the command", args[2]),
+    }
+}
+
+fn parse_show(args: &Vec<String>) -> Result<Command, Error> {
+    let res = parse_select(args);
+    match res {
+        Ok(act_res) => Ok(Command::Show(act_res)),
+        Err(err) => Err(err),
+    }
+}
+
+fn parse_delete(args: &Vec<String>) -> Result<Command, Error> {
+    let res = parse_select(args);
+    match res {
+        Ok(act_res) => {
+            if let Data::All = act_res {
+                bail!("Delete needs a note or reminder to be specified");
+            }
+            Ok(Command::Delete(act_res))
+        }
+        Err(err) => Err(err),
     }
 }
 
@@ -334,11 +355,11 @@ pub fn parse_options(args: Vec<String>) -> Result<Command, Error> {
         "start" => Ok(Command::Start),
         "stop" => Ok(Command::Stop),
         "notify" => parse_notification(&args),
+        "note" => parse_note(&args),
         "help" | "-h" => Ok(Command::Help),
         "add" => Ok(Command::NoCommand),
         "show" => parse_show(&args),
-        "note" => parse_note(&args),
-        "delete" => Ok(Command::NoCommand),
+        "delete" => parse_delete(&args),
         _ => {
             bail!(
                 "{} is not a valid argument! Valid arguments are start, stop, remind, note, help, show, add, delete.",

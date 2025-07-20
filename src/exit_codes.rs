@@ -4,5 +4,6 @@ pub enum ExitCode {
     FileError,
     AlreadyRunning,
     ServerRunError,
+    ResourceNotFound,
     //PathError,
 }

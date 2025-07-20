@@ -21,7 +21,21 @@ mod options;
 mod reminder;
 mod server;
 
-pub fn handle_command(command: Command) {
+//TODO: function parameters to be coerible
+fn main() {
+    init_cli_log!();
+    let args: Vec<String> = std::env::args().collect();
+    match parse_options(args) {
+        Ok(command) => handle_command(command),
+        Err(err) => {
+            error!("{err}");
+            eprintln!("{err}");
+            exit(ExitCode::WrongArguments as i32);
+        }
+    }
+}
+
+fn handle_command(command: Command) {
     match command {
         Command::Help => {
             let mut main_path = get_mainpath();
@@ -123,34 +137,60 @@ pub fn handle_command(command: Command) {
                         println!("{}", data.reminders[id]);
                         return;
                     }
-                    println!("No such reminder.");
+                    error!("No such reminder: {id}");
+                    eprintln!("No such reminder.");
+                    exit(ExitCode::ResourceNotFound as i32)
                 }
                 Data::Note(name) => {
                     if let Some(note) = data.notes.iter().find(|note| note.name == name) {
                         println!("{note}");
                         return;
                     }
-                    println!("No such note.");
+                    error!("No such note: {name}");
+                    eprintln!("No such note.");
+                    exit(ExitCode::ResourceNotFound as i32);
                 }
+            }
+        }
+
+        Command::Delete(data_to_delete) => {
+            let mut data = get_data().expect("Could not retrieve data");
+            match data_to_delete {
+                Data::Reminder(id) => {
+                    if id < data.reminders.len() {
+                        data.reminders.remove(id);
+                    } else {
+                        error!("No such reminder: {id}");
+                        eprintln!("No such note.");
+                        exit(ExitCode::ResourceNotFound as i32);
+                    }
+                }
+                Data::Note(name) => {
+                    let mut found = false;
+                    for i in 0..data.notes.len() {
+                        if data.notes[i].name == name {
+                            data.notes.remove(i);
+                            found = true;
+                        }
+                    }
+
+                    if !found {
+                        error!("No such note: {name}");
+                        eprintln!("No such note.");
+                        exit(ExitCode::ResourceNotFound as i32);
+                    }
+                }
+                _ => exit(ExitCode::WrongArguments as i32),
+            }
+            if update_data(&data).is_err() {
+                error!("Could not update data");
+                eprintln!("Could not update data");
+                exit(ExitCode::FileError as i32);
             }
         }
 
         _ => {
             unimplemented!("Command not yet implemented");
-        }
-    }
-}
-
-//TODO: function parameters to be coerible
-fn main() {
-    init_cli_log!();
-    let args: Vec<String> = std::env::args().collect();
-    match parse_options(args) {
-        Ok(command) => handle_command(command),
-        Err(err) => {
-            error!("{err}");
-            eprintln!("{err}");
-            exit(ExitCode::WrongArguments as i32);
         }
     }
 }

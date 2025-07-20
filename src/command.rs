@@ -7,9 +7,9 @@ pub enum Command {
     Start,
     Stop,
     Help,
-    AddSound(String, String),
-    AddPicture(String, String),
-    Delete(String),
+    // AddSound(String, String),
+    // AddPicture(String, String),
+    Delete(Data),
     Show(Data),
     NoCommand,
 }

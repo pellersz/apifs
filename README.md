@@ -12,7 +12,7 @@ For example you can set a reminder to happen on 2025-08-14 9:31:42 with the desc
 
 If you want to be notified at noon on weekdays, you could use `apifs notify daily -w 12:00:00 -d 1-5`, or if you only want to be notified on Mondays and Wednesdays modify the `1-5` from the previous commands to `13`.
 
-For a reminders that occure after 2025-11-11 within time intervals of one and a half hours try `apifs notify interval -w 2025-11-11 -i 1h30m`.
+For reminders to occure after 2025-11-11 within time intervals of one and a half hours try `apifs notify interval -w 2025-11-11 -i 1h30m`.
 
 To create a note, hit `apifs note -n <note name> --desc <some_description>`.
 
