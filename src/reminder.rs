@@ -1,3 +1,4 @@
+use std::fmt::Display;
 use std::process::Command;
 use std::sync::Arc;
 use std::sync::atomic::AtomicBool;
@@ -9,7 +10,6 @@ use gtk::prelude::*;
 use gtk::{Application, ApplicationWindow};
 use gtk4::Picture;
 use gtk4::glib::clone;
-use gtk4::glib::ffi::g_timeout_add;
 use gtk4::glib::property::PropertySet;
 use gtk4::glib::{ControlFlow, timeout_add};
 use gtk4::{self as gtk, Box, Button, Label};
@@ -27,6 +27,53 @@ pub enum Reminder {
     // param3: last day when the remind happened
     Daily(NaiveTime, [bool; 7], NaiveDate, Media, Option<String>),
     SpecificInterval(NaiveDateTime, Duration, Media, Option<String>),
+}
+
+fn print_misc(f: &mut std::fmt::Formatter<'_>, media: &Media, description: &Option<String>) {
+    if let Some(picture) = &media.picture {
+        let _ = write!(f, ", with picture {picture}");
+    }
+    if let Some(sound) = &media.sound {
+        let _ = write!(f, ", with sound {sound}");
+    }
+    if let Some(description_text) = description {
+        let _ = write!(f, ", description: {description_text}");
+    }
+}
+
+impl Display for Reminder {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match &self {
+            &Reminder::Once(datetime, media, description) => {
+                let _ = write!(f, "Remind on {datetime}");
+                print_misc(f, media, description);
+            }
+            &Reminder::Daily(time, days, _last_day_notified, media, description) => {
+                let _ = write!(f, "Remind at {time} on ");
+                static DAY_NAMES: [&str; 7] = [
+                    "Monday",
+                    "Tuesday",
+                    "Wednesday",
+                    "Thursday",
+                    "Friday",
+                    "Saturday",
+                    "Sunday",
+                ];
+                for i in 1..7 {
+                    if days[i] {
+                        let _ = write!(f, "{},", DAY_NAMES[i]);
+                    }
+                }
+                let _ = write!(f, "{}", 8u8 as char);
+                print_misc(f, media, description);
+            }
+            &Reminder::SpecificInterval(datetime, interval, media, description) => {
+                let _ = write!(f, "From {datetime}, remind every {interval}");
+                print_misc(f, media, description);
+            }
+        }
+        Ok(())
+    }
 }
 
 // This is not how I imagined, I don't know how to open multiple windows, but it works for one

@@ -1,6 +1,7 @@
 pub enum Data {
-    Reminder(String),
+    Reminder(usize),
     Note(String),
+    All,
     // Picture(String),
     // Sound(String),
 }
