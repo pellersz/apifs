@@ -347,7 +347,6 @@ fn parse_delete(args: &Vec<String>) -> Result<Command, Error> {
     }
 }
 
-// TODO: if you are bored, you can try to throw away this garbaggio and use clap
 pub fn parse_options(args: Vec<String>) -> Result<Command, Error> {
     ensure!(args.len() >= 2, "Too few arguments");
 

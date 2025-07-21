@@ -21,7 +21,6 @@ mod options;
 mod reminder;
 mod server;
 
-//TODO: function parameters to be coerible
 fn main() {
     init_cli_log!();
     let args: Vec<String> = std::env::args().collect();

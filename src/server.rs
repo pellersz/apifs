@@ -114,8 +114,6 @@ pub fn run_server() -> Result<(), Error> {
     }
 }
 
-// TODO: implement this shit for real
 fn notify(description: &Option<String>, media: &Media) {
-    println!("{:?} {:?} {:?}", description, media.sound, media.picture);
     display_reminder(description, &media.sound, &media.picture);
 }
