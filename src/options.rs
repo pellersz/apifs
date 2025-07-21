@@ -4,11 +4,21 @@ use chrono::{Duration, NaiveDateTime, NaiveTime, TimeDelta};
 use regex::Regex;
 use std::{cmp, format};
 
-use crate::command::Command;
 use crate::data::Data;
 use crate::media::Media;
 use crate::note::Note;
 use crate::reminder::Reminder;
+
+pub enum Command {
+    Remind(Reminder),
+    Note(Note),
+    Start,
+    Stop,
+    Help,
+    Delete(Data),
+    Show(Data),
+    NoCommand,
+}
 
 // TODO: put date format into configuration file
 fn parse_datetime(args: &Vec<String>, index: usize) -> Option<NaiveDateTime> {

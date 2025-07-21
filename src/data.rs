@@ -1,3 +1,4 @@
+#[derive(Clone)]
 pub enum Data {
     Reminder(usize),
     Note(String),

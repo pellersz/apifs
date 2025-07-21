@@ -17,7 +17,7 @@ use crate::file_manipulation::get_mainpath;
 use crate::file_manipulation::get_program;
 use crate::media::Media;
 
-#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(serde::Serialize, serde::Deserialize, Clone)]
 pub enum Reminder {
     Once(NaiveDateTime, Media, Option<String>),
     // MoreThanOnce(Vec<NaiveDateTime>, Media, Option<String>),
