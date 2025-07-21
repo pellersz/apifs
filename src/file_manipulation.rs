@@ -1,7 +1,8 @@
 use anyhow::{Error, bail, ensure};
+use file_lock::{FileLock, FileOptions};
 use lazy_static::lazy_static;
 use serde_json::{from_reader, to_writer_pretty};
-use std::{fs::File, path::PathBuf, process::Command};
+use std::{path::PathBuf, process::Command};
 
 use crate::apifs_object::ApifsObject;
 
@@ -21,16 +22,16 @@ pub fn get_mainpath() -> PathBuf {
     return MAIN_PATH.clone();
 }
 
-// TODO: do these with locks, thank you
 pub fn get_data() -> Result<ApifsObject, Error> {
     let mut main_path = get_mainpath();
 
     main_path.push("data.json");
 
-    let data_file_res: Result<File, _> = File::open(&main_path);
-    match data_file_res {
+    match FileLock::lock(&main_path, true, FileOptions::new().read(true)) {
         Ok(data_file) => {
-            let file_contents_res: Result<ApifsObject, serde_json::Error> = from_reader(data_file);
+            let file_contents_res: Result<ApifsObject, serde_json::Error> =
+                from_reader(&data_file.file);
+            let _ = data_file.unlock();
             ensure!(
                 file_contents_res.is_ok(),
                 "There was an error reading apifs data"
@@ -49,17 +50,21 @@ pub fn get_data() -> Result<ApifsObject, Error> {
 pub fn update_data(object: &ApifsObject) -> Result<(), Error> {
     let mut main_path = get_mainpath();
     main_path.push("data.json");
-    let data_file_res: Result<File, _> = File::create(&main_path);
-    ensure!(
-        data_file_res.is_ok(),
-        "There was an error opening \"data.json\""
-    );
-
-    let data_file = data_file_res.unwrap();
-
-    let write_res = to_writer_pretty(data_file, object);
-    ensure!(write_res.is_ok(), "There was an error reading apifs data");
-    Ok(())
+    match FileLock::lock(
+        &main_path,
+        true,
+        FileOptions::new().write(true).truncate(true),
+    ) {
+        Ok(data_file) => {
+            let write_res = to_writer_pretty(&data_file.file, object);
+            let _ = data_file.unlock();
+            ensure!(write_res.is_ok(), "There was an error reading apifs data");
+            Ok(())
+        }
+        Err(_) => {
+            bail!("There was an error opening \"data.json\"");
+        }
+    }
 }
 
 pub fn get_program(path: &str, args: Option<Vec<&str>>) -> Command {

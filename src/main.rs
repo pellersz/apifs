@@ -115,7 +115,8 @@ fn handle_command(command: Command) {
                 if update_res.is_err() {
                     let update_res = update_data(&data_file);
                     let Err(err) = update_res else {
-                        exit(ExitCode::Finished as i32);
+                        let _ = get_program("scripts/signal_to_server.sh", None).exec();
+                        exit(ExitCode::FileError as i32);
                     };
                     error!("Could not update notes: {err}");
                     eprintln!("Could not update notes");
@@ -190,8 +191,6 @@ fn handle_command(command: Command) {
             }
         }
 
-        _ => {
-            unimplemented!("Command not yet implemented");
-        }
+        _ => {}
     }
 }
