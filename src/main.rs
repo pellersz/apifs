@@ -35,6 +35,7 @@ fn main() {
     }
 }
 
+// TODO: make this more politically correct (do the command pattern)
 fn handle_command(command: Command) {
     match command {
         Command::Help => {
@@ -57,7 +58,7 @@ fn handle_command(command: Command) {
 
         Command::Start => {
             let mut is_not_already_running: SysCommand =
-                get_program("scripts/is_not_already_running.sh");
+                get_program("scripts/is_not_already_running.sh", None);
 
             if let Ok(exit_code) = is_not_already_running.status() {
                 if !exit_code.success() {
@@ -82,7 +83,7 @@ fn handle_command(command: Command) {
         }
 
         Command::Stop => {
-            let _ = get_program("scripts/stop_apifs.sh").exec();
+            let _ = get_program("scripts/stop_apifs.sh", None).exec();
             exit(ExitCode::FileError as i32);
         }
 

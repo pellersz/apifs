@@ -62,8 +62,12 @@ pub fn update_data(object: &ApifsObject) -> Result<(), Error> {
     Ok(())
 }
 
-pub fn get_program(path: &str) -> Command {
+pub fn get_program(path: &str, args: Option<Vec<&str>>) -> Command {
     let mut main_path = get_mainpath();
     main_path.push(path);
-    Command::new(main_path)
+    let mut res = Command::new(main_path);
+    if let Some(act_args) = args {
+        res.args(act_args);
+    }
+    res
 }

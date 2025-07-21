@@ -1,1 +1,3 @@
-vlc --intf dummy --play-and-exit $1
+#!/bin/bash
+
+vlc --intf dummy -q --play-and-exit $1 2>/dev/null

@@ -1,5 +1,4 @@
 use std::fmt::Display;
-use std::process::Command;
 use std::sync::Arc;
 use std::sync::atomic::AtomicBool;
 use std::sync::atomic::Ordering;
@@ -15,6 +14,7 @@ use gtk4::glib::{ControlFlow, timeout_add};
 use gtk4::{self as gtk, Box, Button, Label};
 
 use crate::file_manipulation::get_mainpath;
+use crate::file_manipulation::get_program;
 use crate::media::Media;
 
 #[derive(serde::Serialize, serde::Deserialize)]
@@ -105,7 +105,7 @@ pub fn display_reminder(
         let exited = Arc::new(AtomicBool::new(false));
 
         let button = Button::with_label("Ok");
-        //clone! macro not working on exit for some reason, or I just messed it up
+        //clone! macro not working on exit for some reason
         let exited_ref = exited.clone();
         button.connect_clicked(clone!(
             #[strong]
@@ -117,7 +117,9 @@ pub fn display_reminder(
         ));
 
         if let Some(picture_path) = &picture_clone {
-            container.append(&Picture::for_filename(picture_path));
+            container.append(&Picture::for_filename(
+                String::from(get_mainpath().to_str().unwrap()) + "/" + picture_path,
+            ));
         }
         container.append(&description_label);
         container.append(&button);
@@ -126,10 +128,13 @@ pub fn display_reminder(
         window.present();
 
         if let Some(ref sound_path) = sound_clone {
-            // TODO: extend get_program to accept arguments too
-            let mut play = get_mainpath();
-            play.push("scripts/play_sound.sh");
-            if let Ok(mut child) = Command::new(&play).arg(sound_path).spawn() {
+            let mut play = get_program(
+                "scripts/play_sound.sh",
+                Some(vec![
+                    (String::from(get_mainpath().to_str().unwrap()) + "/" + sound_path).as_str(),
+                ]),
+            );
+            if let Ok(mut child) = play.spawn() {
                 timeout_add(TimeDuration::from_millis(100), move || {
                     if exited.load(Ordering::Relaxed) {
                         let _ = child.kill();
@@ -138,7 +143,7 @@ pub fn display_reminder(
                     return ControlFlow::Continue;
                 });
             } else {
-                let _ = Command::new(&play).arg(sound_path).spawn();
+                warn!("Could not play file");
             }
         }
     });
