@@ -2,7 +2,7 @@
 .\" Contact pappgellert2003@gmail.com to correct errors or typos.
 .TH man 1 "14 Jul 2025" "0.1" "apifs man page"
 .SH NAME
-apifs \- create, manage notifications and notes 
+apifs \- create, manage notifications and notes
 .SH SYNOPSIS
 apifs <command> [options]
 .SH DESCRIPTION
@@ -11,17 +11,17 @@ apifs is a CLI tool for setting notifications and notes. Notifications can have 
 .PP
 help
 .RS 4
-Prints out the synopsis
+Prints out the synopsis.
 .RE
 .PP
 start
 .RS 4
-Starts the notification server
+Starts the notification server.
 .RE
 .PP
 stop
 .RS 4
-Stops the notification server
+Stops the notification server.
 .RE
 .PP
 notify
@@ -32,35 +32,40 @@ Used to create notifications. The type of notification can be set with the follo
 .RE
 once
 .RS 6
-A notification which will only notify at a set time and date. This can be set using options
+A notification which will only notify at a set time and date. This can be set using options.
 .sp
 .RE
 daily
 .RS 6
-Notification which will notify at a set time of day. This and days to notify on can be set using options
+Notification which will notify at a set time of day. This and days to notify on can be set using options.
 .sp
 .RE
 interval
 .RS 6
-Notification which will notify in a set time interval from a starting time. These can be set using options
+Notification which will notify in a set time interval from a starting time. These can be set using options.
 .RE
 .RE
 .RE
 .PP
 note
 .RS 4
-Used to create a note. To set name and text for the note use options
+Used to create a note. To set name and text for the note use options.
 .RE
 .PP
 show
 .RS 4
-Yet to be implemented
+By itself it will display all reminders and notes made by apifs. With options, it can display a single reminder or note.
+.RE
+.PP 
+delete
+.RS 4
+Used to delete notes and reminders. To specify the note or reminder options must be provided.
 
 .SH OPTIONS
 .PP
 \-w
 .RS 4
-With noitfy once it specifies the date and time to remind. With notify daily it sets the time of day to remind. With notify interval it sets the date and time for the first notification
+With noitfy once it specifies the date and time to remind. With notify daily it sets the time of day to remind. With notify interval it sets the date and time for the first notification.
 .sp
 .RE
 \-d
@@ -75,17 +80,27 @@ Used to set the duration between notifications with notify interval.
 .RE
 \-s
 .RS 4
-Used to set sound for notification sound
+Used to set sound for notification sound.
 .sp
 .RE
 \-p
 .RS 4
-Used to set picture for notification 
+Used to set picture for notification.
+.sp
+.RE
+\-n           
+.RS 4 
+Used with note to set a name for a note, to show or delete, it specifies that a note is to be shown or deleted, after it the name of the note has to be specified.
+.sp
+.RE
+\-r           
+.RS 4
+To show or delete, it specifies that a reminder is to be shown or deleted, after it the id of the reminder has to be specified.
 .sp
 .RE
 \--desc
 .RS 4
-Used to set description for notifications and notes. Note that this needs to be the last option, because everything after it will be interpreted as part of --desc 
+Used to set description for notifications and notes. Note that this needs to be the last option, because everything after it will be interpreted as part of --desc.
 .SH SHOUTOUT TO
 git(1), tldr(1)
 .SH BUGS

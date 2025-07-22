@@ -1,2 +1,26 @@
-I be very helpful
-yup, that's what I am
+Usage: apifs <command> [options]
+
+apifs is a CLI tool for setting notifications and notes. Notifications can have associated cover images and sounds played when appearing.
+
+Commands:
+    help            Prints out this message.
+    start           Starts the notification server.
+    stop            Stops the notification server.
+    notify          Used to create notifications. The type of notification can be set with the following specifiers.
+        once        A notification which will only notify at a set time and date. This can be set using options.
+        daily       Notification which will notify at a set time of day. This and days to notify on can be set using options.
+        interval    Notification which will notify in a set time interval from a starting time. These can be set using options.
+    note            Used to create a note. To set name and text for the note use options.
+    show            By itself it will display all reminders and notes made by apifs. With options, it can display a single reminder or note.
+    delete          Used to delete notes and reminders. To specify the note or reminder options must be provided.
+
+Options:
+    -w           With noitfy once it specifies the date and time to remind. With notify daily it sets the time of day to remind. With notify interval it sets the date and time for the first notification
+    -d           Used to set the days on which a daily notification will happen. The format should be conform [1-7]{1-7} or [1-7]-[1-7] (ex. 325 or 2-5).
+    -i           Used to set the duration between notifications with notify interval.
+    -s           Used to set sound for notification sound
+    -p           Used to set picture for notification
+    -n           Used with note to set a name for a note, to show or delete, it specifies that a note is to be shown or deleted, after it the name of the note has to be specified
+    -r           To show or delete, it specifies that a reminder is to be shown or deleted, after it the id of the reminder has to be specified
+    --desc       Used to set description for notifications and notes. Note that this needs to be the last option, because everything after it will be interpreted as part of --desc
+
