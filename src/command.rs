@@ -2,7 +2,6 @@ use anyhow::{Error, bail, ensure};
 use chrono::Local;
 use chrono::{Duration, NaiveDateTime, NaiveTime, TimeDelta};
 use regex::Regex;
-use std::iter::Once;
 use std::{cmp, format};
 
 use crate::command::delete::Delete;

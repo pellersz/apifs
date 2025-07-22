@@ -37,6 +37,7 @@ pub fn run_server() -> Result<(), Error> {
             println!("Server started");
             while !sigterm.load(Ordering::Relaxed) {
                 if sigupdate.load(Ordering::Relaxed) {
+                    sigupdate.store(false, Ordering::Relaxed);
                     let data_res = get_data();
                     match data_res {
                         Ok(new_data) => {

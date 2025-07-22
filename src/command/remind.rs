@@ -1,7 +1,7 @@
 use crate::{
     command::Command,
     exit_codes::ExitCode,
-    file_manipulation::{get_data, update_data},
+    file_manipulation::{get_data, get_program, update_data},
     reminder::Reminder,
 };
 use std::process::exit;
@@ -25,12 +25,14 @@ impl Command for Remind {
                 if update_res.is_err() {
                     let update_res = update_data(&data_file);
                     let Err(err) = update_res else {
+                        let _ = get_program("scripts/signal_to_server.sh", None).spawn();
                         exit(ExitCode::Finished as i32);
                     };
                     error!("Could not update reminders: {err}");
                     eprintln!("Could not update reminders");
                     exit(ExitCode::FileError as i32);
                 }
+                let _ = get_program("scripts/signal_to_server.sh", None).spawn();
             }
             Err(err) => {
                 error!("There was an error opening \"data.json\":{err}");
