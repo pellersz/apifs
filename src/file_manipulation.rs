@@ -2,6 +2,8 @@ use anyhow::{Error, bail, ensure};
 use file_lock::{FileLock, FileOptions};
 use lazy_static::lazy_static;
 use serde_json::{from_reader, to_writer_pretty};
+#[cfg(not(debug_assertions))]
+use std::path::Path;
 use std::{path::PathBuf, process::Command};
 
 use crate::apifs_object::ApifsObject;
@@ -68,7 +70,14 @@ pub fn update_data(object: &ApifsObject) -> Result<(), Error> {
 }
 
 pub fn get_program(path: &str, args: Option<Vec<&str>>) -> Command {
+    //#[cfg(debug_assertions)]
     let mut main_path = get_mainpath();
+
+    //#[cfg(not(debug_assertions))]
+    //let mut main_path = PathBuf::new();
+    #[cfg(not(debug_assertions))]
+    main_path.push("../../opt/apifs/");
+
     main_path.push(path);
     let mut res = Command::new(main_path);
     if let Some(act_args) = args {
