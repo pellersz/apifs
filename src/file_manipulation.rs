@@ -2,9 +2,7 @@ use anyhow::{Error, bail, ensure};
 use file_lock::{FileLock, FileOptions};
 use lazy_static::lazy_static;
 use serde_json::{from_reader, to_writer_pretty};
-#[cfg(not(debug_assertions))]
-use std::path::Path;
-use std::{path::PathBuf, process::Command};
+use std::{fs::create_dir_all, path::PathBuf, process::Command};
 
 use crate::apifs_object::ApifsObject;
 
@@ -24,11 +22,34 @@ pub fn get_mainpath() -> PathBuf {
     return MAIN_PATH.clone();
 }
 
-pub fn get_data() -> Result<ApifsObject, Error> {
-    let mut main_path = get_mainpath();
+fn get_data_path() -> PathBuf {
+    let mut main_path: PathBuf;
+    #[cfg(debug_assertions)]
+    {
+        main_path = get_mainpath();
+    }
+    #[cfg(not(debug_assertions))]
+    {
+        use std::env::{home_dir, var};
+        use std::path::Path;
 
+        match var("XDG_CONFIG_HOME") {
+            Ok(conf_home) => {
+                main_path = Path::new(&conf_home).to_path_buf();
+            }
+            _ => {
+                main_path = home_dir().expect("Could not open home directory");
+                main_path.push(".config");
+            }
+        }
+        main_path.push("apifs");
+    }
     main_path.push("data.json");
+    main_path
+}
 
+pub fn get_data() -> Result<ApifsObject, Error> {
+    let mut main_path = get_data_path();
     match FileLock::lock(&main_path, true, FileOptions::new().read(true)) {
         Ok(data_file) => {
             let file_contents_res: Result<ApifsObject, serde_json::Error> =
@@ -41,7 +62,18 @@ pub fn get_data() -> Result<ApifsObject, Error> {
             Ok(file_contents_res.unwrap())
         }
         Err(err) => match err.kind() {
-            std::io::ErrorKind::NotFound => Ok(Default::default()),
+            std::io::ErrorKind::NotFound => {
+                main_path.pop();
+                if create_dir_all(main_path).is_err() {
+                    eprintln!(
+                        "Could not create $XDG_CONFIG_HOME/apifs directory or ~/.config/apifs directory"
+                    );
+                    warn!(
+                        "Could not create $XDG_CONFIG_HOME/apifs directory or ~/.config/apifs directory"
+                    );
+                }
+                Ok(Default::default())
+            }
             _ => {
                 bail!("Could not open \"data.json\", but it exists");
             }
@@ -50,12 +82,11 @@ pub fn get_data() -> Result<ApifsObject, Error> {
 }
 
 pub fn update_data(object: &ApifsObject) -> Result<(), Error> {
-    let mut main_path = get_mainpath();
-    main_path.push("data.json");
+    let main_path = get_data_path();
     match FileLock::lock(
         &main_path,
         true,
-        FileOptions::new().write(true).truncate(true),
+        FileOptions::new().write(true).truncate(true).create(true),
     ) {
         Ok(data_file) => {
             let write_res = to_writer_pretty(&data_file.file, object);
@@ -63,18 +94,15 @@ pub fn update_data(object: &ApifsObject) -> Result<(), Error> {
             ensure!(write_res.is_ok(), "There was an error reading apifs data");
             Ok(())
         }
-        Err(_) => {
+        _ => {
             bail!("There was an error opening \"data.json\"");
         }
     }
 }
 
 pub fn get_program(path: &str, args: Option<Vec<&str>>) -> Command {
-    //#[cfg(debug_assertions)]
     let mut main_path = get_mainpath();
 
-    //#[cfg(not(debug_assertions))]
-    //let mut main_path = PathBuf::new();
     #[cfg(not(debug_assertions))]
     main_path.push("../../opt/apifs/");
 

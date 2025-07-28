@@ -107,7 +107,7 @@ fn parse_notification(args: &Vec<String>) -> Result<Box<dyn Command>, Error> {
                         let datetime = parse_datetime(&args, i + 1);
                         ensure!(
                             datetime != None,
-                            "{} is not a valid date!\nValid dates should be in the format of %Y-%m-%d %H:%M:%S.",
+                            "{} is not a valid date! Valid dates should be in the format of %Y-%m-%d %H:%M:%S.",
                             args[i + 1]
                         );
                         final_datetime = datetime;
